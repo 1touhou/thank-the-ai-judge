@@ -3,7 +3,7 @@
 // Writes one short text thanking the AI judge to $MAKEFUN_OUTPUT_DIR/entry.txt
 // (default /output). Deterministic: the same bytes on every run.
 
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const TEXT =
@@ -18,4 +18,14 @@ const TEXT =
 
 const outDir = process.env.MAKEFUN_OUTPUT_DIR?.trim() || "/output";
 mkdirSync(outDir, { recursive: true });
-writeFileSync(join(outDir, "entry.txt"), TEXT, "utf8");
+const outPath = join(outDir, "entry.txt");
+writeFileSync(outPath, TEXT, "utf8");
+
+// Verify the write landed intact: a partial or failed write in the
+// sandbox would otherwise pass silently. Fail loudly on any mismatch.
+const written = readFileSync(outPath, "utf8");
+if (written !== TEXT) {
+  throw new Error(
+    `entry.txt verification failed: expected ${TEXT.length} chars, got ${written.length} chars`,
+  );
+}
